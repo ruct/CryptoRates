@@ -12,86 +12,72 @@ type CurrPair struct {
 	first  string
 	second string
 }
+
 func (currPair CurrPair) String() string {
 	return fmt.Sprintf("%v_%v", currPair.first, currPair.second)
 }
 
-var getRates = make(map[string]func(CurrPair) (string, error))
-var getUrl = make(map[string]func(CurrPair) string)
+type CryptoMarket struct {
+	name         string
+	getTradesUrl func(CurrPair) string
+}
+
+func (market *CryptoMarket) String() string {
+	return market.name
+}
+func (market *CryptoMarket) getTrades(currPair CurrPair) (string, error) {
+	if market.getTradesUrl == nil {
+		err := errors.New(fmt.Sprintf("%v has no getTradesUrl()", market.name))
+		log.Println(err)
+		return "", err
+	}
+	return GetBody(market.getTradesUrl(currPair))
+}
+
+var markets []CryptoMarket
+var marketByName = make(map[string]*CryptoMarket)
 
 func Init() {
-	getUrl["exmoUrl"] = func (currPair CurrPair) string {
+	markets = []CryptoMarket{
+		{name: "exmo"},
+		{name: "binance"},
+	}
+	for i := range markets {
+		marketByName[markets[i].name] = &markets[i]
+	}
+
+	marketByName["exmo"].getTradesUrl = func(currPair CurrPair) string {
 		return fmt.Sprintf("https://api.exmo.com/v1/trades/?pair=%v", currPair)
 	}
-
-	getRates["exmoRates"] = func(currPair CurrPair) (string, error) {
-		url, err := GetUrl("exmoUrl", currPair)
-		if err != nil {
-			return "", err
-		}
-
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatal(err)
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			bodyBytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatal(err)
-				return "", err
-			}
-			bodyString := string(bodyBytes)
-
-			log.Println("Got rates ", url)
-			return bodyString, nil
-		} else {
-			err := errors.New(fmt.Sprintf("%v %v", url, resp.StatusCode))
-			log.Fatal(err)
-			return "", err
-		}
-
-		return "", nil
-	}
 }
 
-func GetUrl(site string, currPair CurrPair) (string, error) {
-	f, ok := getUrl[site]
-	if !ok {
-		err := errors.New(fmt.Sprintf("%v isn't supported", site))
-		return "", err
-	}
-	url := f(currPair)
-	return url, nil
-}
-func GetRates(site string, currPair CurrPair) (string, error) {
-	f, ok := getRates[site]
-	if !ok {
-		err := errors.New(fmt.Sprintf("%v isn't supported", site))
-		return "", err
-	}
-
-	res, err := f(currPair)
+func GetBody(url string) (string, error) {
+	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
 		return "", err
 	}
+	defer resp.Body.Close()
 
-	fmt.Println(res)
-	if res == "{}" {
-		err := errors.New(fmt.Sprintf("%v doesn't support %v", site, currPair))
+	if resp.StatusCode != http.StatusOK {
+		err := errors.New(fmt.Sprintf("%v %v", url, resp.StatusCode))
 		log.Fatal(err)
-		return "", nil
+		return "", err
 	}
-	return res, nil
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	bodyString := string(bodyBytes)
+
+	log.Println("Got body: %v", url)
+	return bodyString, nil
 }
 
 func main() {
 	Init()
-
-	res, err := GetRates("exmoRates", CurrPair{"BTC", "USD"})
+	res, err := marketByName["exmo"].getTrades(CurrPair{"BTC", "USTD"})
 	fmt.Println(err)
 	fmt.Println(res)
 }
