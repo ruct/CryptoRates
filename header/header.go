@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sync"
 )
 
 type CurrPair struct {
@@ -27,32 +28,40 @@ func (rate Rate) String() string {
 	return fmt.Sprintf("%v buy: %v; sell: %v\n", rate.CurrPair, rate.BuyPrice, rate.SellPrice)
 }
 
-type CryptoMarket interface {
-	GetName() string
-	GetRate(CurrPair, int32) Rate
+type CachedRate struct {
+	Rate    Rate
+	Updated int64
+}
+type MuxMap struct {
+	MuxMap map[CurrPair]CachedRate
+	Mux    sync.Mutex
 }
 
+type CryptoMarket interface {
+	GetName() string
+	GetRate(CurrPair, int64) Rate
+}
 
 func GetBody(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		err := errors.New(fmt.Sprintf("%v %v", url, resp.StatusCode))
-		log.Fatal(err)
+		log.Println(err)
 		return "", err
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return "", err
 	}
 	bodyString := string(bodyBytes)
 
-	log.Println("Got body: %v", url)
+	log.Println(fmt.Sprintf("Got body: %v", url))
 	return bodyString, nil
 }

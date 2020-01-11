@@ -7,19 +7,10 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-type cachedRate struct {
-	rate    header.Rate
-	recency int64
-}
-type muxMap struct {
-	muxMap map[header.CurrPair]cachedRate
-	mux    sync.Mutex
-}
 type Exmo struct {
-	cachedRates muxMap
+	cachedRates header.MuxMap
 }
 
 func (*Exmo) GetName() string {
@@ -43,7 +34,7 @@ func (exmo *Exmo) Renew() error {
 		return err
 	}
 
-	var data = make(map[header.CurrPair]cachedRate)
+	var data = make(map[header.CurrPair]header.CachedRate)
 	for key, value := range fullData {
 		s := strings.Split(key, "_")
 		if len(s) != 2 {
@@ -81,7 +72,7 @@ func (exmo *Exmo) Renew() error {
 				return err2
 			}
 
-			data[currPair] = cachedRate{
+			data[currPair] = header.CachedRate{
 				header.Rate{
 					currPair,
 					buyPrice,
@@ -92,9 +83,9 @@ func (exmo *Exmo) Renew() error {
 		}
 	}
 
-	exmo.cachedRates.mux.Lock()
-	exmo.cachedRates.muxMap = data
-	exmo.cachedRates.mux.Unlock()
+	exmo.cachedRates.Mux.Lock()
+	exmo.cachedRates.MuxMap = data
+	exmo.cachedRates.Mux.Unlock()
 
 	return nil
 }
