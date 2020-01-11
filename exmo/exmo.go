@@ -3,10 +3,12 @@ package exmo
 import (
 	"../header"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Exmo struct {
@@ -17,11 +19,23 @@ func (*Exmo) GetName() string {
 	return "exmo"
 }
 
-func (exmo *Exmo) GetRate(currPair header.CurrPair) (header.Rate, error) {
-	return header.Rate{}, nil
+func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
+	exmo.cachedRates.Mux.Lock()
+	defer exmo.cachedRates.Mux.Unlock()
+
+	cachedRate, ok := exmo.cachedRates.MuxMap[currPair]
+	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
+		exmo.renew()
+		cachedRate, ok = exmo.cachedRates.MuxMap[currPair]
+		if !ok {
+			err := errors.New(fmt.Sprintf("exmo: no such %v", currPair))
+			return header.Rate{}, err
+		}
+	}
+	return cachedRate.Rate, nil
 }
 
-func (exmo *Exmo) Renew() error {
+func (exmo *Exmo) renew() error {
 	body, err := header.GetBody("https://api.exmo.com/v1/ticker/")
 	if err != nil {
 		return err
@@ -79,13 +93,9 @@ func (exmo *Exmo) Renew() error {
 					sellPrice,
 				},
 				updated}
-			fmt.Println(fmt.Sprintf("%v: %v %v %v", currPair, buyPrice, sellPrice, updated))
 		}
 	}
 
-	exmo.cachedRates.Mux.Lock()
 	exmo.cachedRates.MuxMap = data
-	exmo.cachedRates.Mux.Unlock()
-
 	return nil
 }
