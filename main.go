@@ -1,21 +1,16 @@
 package main
 
 import (
-	"./exmo"
 	"./header"
-	"fmt"
-	"time"
+	"./tests"
 )
 
 var markets []header.CryptoMarket
 var marketByName = make(map[string]header.CryptoMarket)
 
 func main() {
-	header.Init()
+	tests.ExmoTest()
+	select {
 
-	var exmo exmo.Exmo
-	for {
-		fmt.Println(exmo.GetRate(header.CurrPair{"BTC", "USDT"}, 20))
-		time.Sleep(time.Second)
 	}
 }
