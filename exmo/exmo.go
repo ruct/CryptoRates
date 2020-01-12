@@ -25,7 +25,12 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 
 	cachedRate, ok := exmo.cachedRates.MuxMap[currPair]
 	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
-		exmo.renew()
+		err := exmo.renew()
+		if err != nil {
+			log.Println(err)
+			return header.Rate{}, err
+		}
+
 		cachedRate, ok = exmo.cachedRates.MuxMap[currPair]
 		if !ok {
 			err := errors.New(fmt.Sprintf("exmo: no such %v", currPair))
@@ -36,6 +41,8 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 }
 
 func (exmo *Exmo) renew() error {
+	log.Println("exmo: updating ", time.Now())
+
 	body, err := header.GetBody("https://api.exmo.com/v1/ticker/")
 	if err != nil {
 		return err
@@ -65,11 +72,11 @@ func (exmo *Exmo) renew() error {
 		if !(ok1 && ok2 && ok3) {
 			switch {
 			case !ok1:
-				log.Println(fmt.Sprint("exmo: couldn't parse %v: buyPrice %v"), cmap["buy_price"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse %v: buyPrice %v"), cmap["buy_price"])
 			case !ok2:
-				log.Println(fmt.Sprint("exmo: couldn't parse sellPrice %v"), cmap["sell_price"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse sellPrice %v"), cmap["sell_price"])
 			case !ok3:
-				log.Println(fmt.Sprint("exmo: couldn't parse updated %v"), cmap["updated"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse updated %v"), cmap["updated"])
 			}
 			continue
 		} else {

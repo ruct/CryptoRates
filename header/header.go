@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 )
 
@@ -64,4 +65,14 @@ func GetBody(url string) (string, error) {
 
 	log.Println(fmt.Sprintf("Got body: %v", url))
 	return bodyString, nil
+}
+
+func Init() {
+	f, err := os.OpenFile("logfile", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+
+	log.SetOutput(f)
+	log.Println("log inited")
 }
