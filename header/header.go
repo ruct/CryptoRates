@@ -31,10 +31,10 @@ func (rate Rate) String() string {
 }
 
 type CachedRate struct {
-	Rate     Rate
-	Updated  int64
-	LastDeal int64
+	Rate    Rate
+	Updated int64
 }
+
 type MuxMap struct {
 	MuxMap map[CurrPair]CachedRate
 	Mux    sync.Mutex
