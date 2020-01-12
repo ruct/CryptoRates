@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 )
 
@@ -30,8 +31,9 @@ func (rate Rate) String() string {
 }
 
 type CachedRate struct {
-	Rate    Rate
-	Updated int64
+	Rate     Rate
+	Updated  int64
+	LastDeal int64
 }
 type MuxMap struct {
 	MuxMap map[CurrPair]CachedRate
@@ -63,12 +65,13 @@ func GetBody(url string) (string, error) {
 	}
 	bodyString := string(bodyBytes)
 
-	log.Println(fmt.Sprintf("Got body: %v", url))
 	return bodyString, nil
 }
 
 func Init() {
-	f, err := os.OpenFile("logfile", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	runtime.GOMAXPROCS(8)
+
+	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}

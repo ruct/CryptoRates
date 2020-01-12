@@ -24,7 +24,16 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 	defer exmo.cachedRates.Mux.Unlock()
 
 	cachedRate, ok := exmo.cachedRates.MuxMap[currPair]
+	if !ok {
+		log.Println(fmt.Sprintf("exmo: no such %v", currPair))
+	}
+	if ok && time.Now().Unix()-cachedRate.Updated > recency {
+		log.Println(fmt.Sprintf("exmo: need to update %v, last update was: %v", currPair, time.Now().Unix()-cachedRate.Updated))
+	}
+
 	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
+		was := cachedRate.Updated
+
 		err := exmo.renew()
 		if err != nil {
 			log.Println(err)
@@ -33,15 +42,20 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 
 		cachedRate, ok = exmo.cachedRates.MuxMap[currPair]
 		if !ok {
-			err := errors.New(fmt.Sprintf("exmo: no such %v", currPair))
+			err := errors.New(fmt.Sprintf("exmo: incorrect pair %v", currPair))
+			log.Println(err)
 			return header.Rate{}, err
 		}
+
+		became := cachedRate.Updated
+		log.Println(fmt.Sprintf("exmo: wanted %v, was: %v, became: %v", currPair, was, became))
 	}
 	return cachedRate.Rate, nil
 }
 
 func (exmo *Exmo) renew() error {
 	log.Println("exmo: updating ", time.Now())
+	fmt.Println("exmo: updating ", time.Now())
 
 	body, err := header.GetBody("https://api.exmo.com/v1/ticker/")
 	if err != nil {
@@ -68,21 +82,21 @@ func (exmo *Exmo) renew() error {
 
 		buyPrice, ok1 := cmap["buy_price"].(string)
 		sellPrice, ok2 := cmap["sell_price"].(string)
-		updated, ok3 := cmap["updated"].(float64)
+		lastDeal, ok3 := cmap["updated"].(float64)
 		if !(ok1 && ok2 && ok3) {
 			switch {
 			case !ok1:
-				log.Println(fmt.Sprintf("exmo: couldn't parse %v: buyPrice %v"), cmap["buy_price"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse buyPrice %v", cmap["buy_price"]))
 			case !ok2:
-				log.Println(fmt.Sprintf("exmo: couldn't parse sellPrice %v"), cmap["sell_price"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse sellPrice %v", cmap["sell_price"]))
 			case !ok3:
-				log.Println(fmt.Sprintf("exmo: couldn't parse updated %v"), cmap["updated"])
+				log.Println(fmt.Sprintf("exmo: couldn't parse updated %v", cmap["updated"]))
 			}
 			continue
 		} else {
 			buyPrice, err1 := strconv.ParseFloat(buyPrice, 64)
 			sellPrice, err2 := strconv.ParseFloat(sellPrice, 64)
-			updated := int64(updated)
+			lastDeal := int64(lastDeal)
 
 			if err1 != nil {
 				log.Println(err1)
@@ -99,7 +113,9 @@ func (exmo *Exmo) renew() error {
 					buyPrice,
 					sellPrice,
 				},
-				updated}
+				time.Now().Unix(),
+				lastDeal,
+			}
 		}
 	}
 
