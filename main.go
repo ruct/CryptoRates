@@ -1,16 +1,19 @@
 package main
 
 import (
+	"./binance"
 	"./header"
-	"./tests"
+	"fmt"
 )
 
 var markets []header.CryptoMarket
 var marketByName = make(map[string]header.CryptoMarket)
 
 func main() {
-	tests.ExmoTest()
-	select {
-
-	}
+	var binance binance.Binance
+	fmt.Println(binance.GetRate(header.CurrPair{"BTC", "USDT"}, 40))
+	//tests.ExmoTest()
+	//select {
+	//
+	//}
 }
