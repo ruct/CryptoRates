@@ -6,11 +6,13 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Exmo struct {
-	cachedRates header.MuxMap
+	cachedRates map[header.CurrPair]header.Rate
+	mux sync.Mutex
 }
 
 func (*Exmo) GetName() string {
@@ -18,12 +20,12 @@ func (*Exmo) GetName() string {
 }
 
 func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	exmo.cachedRates.Mux.Lock()
-	defer exmo.cachedRates.Mux.Unlock()
+	exmo.mux.Lock()
+	defer exmo.mux.Unlock()
 
 	return header.DefaultGetRate(exmo, currPair, recency,
 		func() (rate header.Rate, ok bool) {
-			rate, ok = exmo.cachedRates.MuxMap[currPair]
+			rate, ok = exmo.cachedRates[currPair]
 			return rate, ok
 		},
 		func() error {
@@ -36,8 +38,8 @@ func (exmo *Exmo) GetTradesUrl(header.CurrPair) string {
 }
 
 func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
-	if exmo.cachedRates.MuxMap == nil {
-		exmo.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
+	if exmo.cachedRates == nil {
+		exmo.cachedRates = make(map[header.CurrPair]header.Rate)
 	}
 
 	var data = make(map[header.CurrPair]header.Rate)
@@ -83,7 +85,7 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 		}
 	}
 
-	exmo.cachedRates.MuxMap = data
+	exmo.cachedRates = data
 	return nil
 }
 

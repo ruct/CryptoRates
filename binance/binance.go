@@ -5,27 +5,26 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type Binance struct {
-	cachedRates header.MuxMap
+	cachedRates map[header.CurrPair]header.Rate
+	mux sync.Mutex
 }
 
 func (*Binance) GetName() string {
 	return "binance"
 }
-func (binance *Binance) SetRate(rate header.Rate) {
-	binance.cachedRates.MuxMap[rate.CurrPair] = rate
-}
 
 func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	binance.cachedRates.Mux.Lock()
-	defer binance.cachedRates.Mux.Unlock()
+	binance.mux.Lock()
+	defer binance.mux.Unlock()
 
 	return header.DefaultGetRate(binance, currPair, recency,
 		func() (rate header.Rate, ok bool) {
-			rate, ok = binance.cachedRates.MuxMap[currPair]
+			rate, ok = binance.cachedRates[currPair]
 			return rate, ok
 		},
 		func() error {
@@ -38,8 +37,8 @@ func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {
 }
 
 func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[string]interface{}) error {
-	if binance.cachedRates.MuxMap == nil {
-		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
+	if binance.cachedRates == nil {
+		binance.cachedRates = make(map[header.CurrPair]header.Rate)
 	}
 
 	var err error
@@ -61,7 +60,7 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 		}
 	}
 
-	binance.cachedRates.MuxMap[currPair] = header.Rate{
+	binance.cachedRates[currPair] = header.Rate{
 		currPair,
 		buyPrice,
 		sellPrice,

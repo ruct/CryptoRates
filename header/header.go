@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"sync"
 	"time"
 )
 
@@ -31,11 +30,6 @@ type Rate struct {
 
 func (rate Rate) String() string {
 	return fmt.Sprintf("%v buy: %v; sell: %v; updated: %v\n", rate.CurrPair, rate.BuyPrice, rate.SellPrice, time.Unix(rate.Updated, 0))
-}
-
-type MuxMap struct {
-	MuxMap map[CurrPair]Rate
-	Mux    sync.Mutex
 }
 
 type CryptoMarket interface {
