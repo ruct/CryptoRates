@@ -34,11 +34,15 @@ func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header
 		})
 }
 
+func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {
+	return fmt.Sprintf("https://api.binance.com/api/v1/ticker/24hr?symbol=%v%v", currPair.First, currPair.Second)
+}
+
 func (binance *Binance) renew(currPair header.CurrPair) error {
 	log.Println("binance: updating ", time.Now())
 	fmt.Println("binance: updating ", time.Now())
 
-	body, err := header.GetBody(fmt.Sprintf("https://api.binance.com/api/v1/ticker/24hr?symbol=%v%v", currPair.First, currPair.Second))
+	body, err := header.GetBody(binance.GetTradesUrl(currPair))
 	if err != nil {
 		return err
 	}

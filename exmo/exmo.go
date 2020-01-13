@@ -32,11 +32,15 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 		})
 }
 
+func (exmo *Exmo) GetTradesUrl(header.CurrPair) string {
+	return "https://api.exmo.com/v1/ticker/"
+}
+
 func (exmo *Exmo) renew() error {
 	log.Println("exmo: updating ", time.Now())
 	fmt.Println("exmo: updating ", time.Now())
 
-	body, err := header.GetBody("https://api.exmo.com/v1/ticker/")
+	body, err := header.GetBody(exmo.GetTradesUrl(header.CurrPair{}))
 	if err != nil {
 		return err
 	}
