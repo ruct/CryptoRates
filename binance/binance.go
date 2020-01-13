@@ -37,21 +37,14 @@ func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {
 	return fmt.Sprintf("https://api.binance.com/api/v1/ticker/24hr?symbol=%v%v", currPair.First, currPair.Second)
 }
 
-func (binance *Binance) renew(currPair header.CurrPair) error {
-	log.Println("binance: updating ", time.Now())
-	fmt.Println("binance: updating ", time.Now())
-
+func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[string]interface{}) error {
 	if binance.cachedRates.MuxMap == nil {
 		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
 	}
 
-	fullData, err := header.GetJson(binance.GetTradesUrl(currPair))
-	if err != nil {
-		return err
-	}
-
+	var err error
 	var buyPrice, sellPrice float64 = -1, -1
-	for key, value := range fullData {
+	for key, value := range jsonData {
 		if key == "bidPrice" {
 			value := value.(string)
 			buyPrice, err = strconv.ParseFloat(value, 64)
@@ -75,4 +68,11 @@ func (binance *Binance) renew(currPair header.CurrPair) error {
 		time.Now().Unix(),
 	}
 	return nil
+}
+
+func (binance *Binance) renew(currPair header.CurrPair) error {
+	return header.DefaultRenew(binance, currPair,
+		func(jsonData map[string]interface{}) error {
+			return binance.processJson(currPair, jsonData)
+		})
 }

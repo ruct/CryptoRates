@@ -127,3 +127,15 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 	}
 	return cachedRate, nil
 }
+
+func DefaultRenew(market CryptoMarket, currPair CurrPair,
+	processJson func (map[string]interface{}) error) error {
+
+	log.Println(fmt.Sprintf("%v: updating %v", market.GetName(), time.Now()))
+	fmt.Println(fmt.Sprintf("%v: updating %v", market.GetName(), time.Now()))
+	fullData, err := GetJson(market.GetTradesUrl(currPair))
+	if err != nil {
+		return err
+	}
+	return processJson(fullData)
+}

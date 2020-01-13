@@ -35,20 +35,16 @@ func (exmo *Exmo) GetTradesUrl(header.CurrPair) string {
 	return "https://api.exmo.com/v1/ticker/"
 }
 
-func (exmo *Exmo) renew() error {
-	log.Println("exmo: updating ", time.Now())
-	fmt.Println("exmo: updating ", time.Now())
-
-	fullData, err := header.GetJson(exmo.GetTradesUrl(header.CurrPair{}))
-	if err != nil {
-		return err
+func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
+	if exmo.cachedRates.MuxMap == nil {
+		exmo.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
 	}
 
 	var data = make(map[header.CurrPair]header.Rate)
-	for key, value := range fullData {
+	for key, value := range jsonData {
 		s := strings.Split(key, "_")
 		if len(s) != 2 {
-			log.Println(fmt.Sprintf("exmo: couldn't convert currency-pair %v", key))
+			log.Println(fmt.Sprintf("%v: couldn't convert currency-pair %v", exmo.GetName(), key))
 			continue
 		}
 		currPair := header.CurrPair{s[0], s[1]}
@@ -60,9 +56,9 @@ func (exmo *Exmo) renew() error {
 		if !(ok1 && ok2) {
 			switch {
 			case !ok1:
-				log.Println(fmt.Sprintf("exmo: couldn't parse buyPrice %v", cmap["buy_price"]))
+				log.Println(fmt.Sprintf("%v: couldn't parse buyPrice %v", exmo.GetName(), cmap["buy_price"]))
 			case !ok2:
-				log.Println(fmt.Sprintf("exmo: couldn't parse sellPrice %v", cmap["sell_price"]))
+				log.Println(fmt.Sprintf("%v: couldn't parse sellPrice %v", exmo.GetName(), cmap["sell_price"]))
 			}
 			continue
 		} else {
@@ -89,4 +85,11 @@ func (exmo *Exmo) renew() error {
 
 	exmo.cachedRates.MuxMap = data
 	return nil
+}
+
+func (exmo *Exmo) renew() error {
+	return header.DefaultRenew(exmo, header.CurrPair{},
+		func(jsonData map[string]interface{}) error {
+			return exmo.processJson(jsonData)
+		})
 }
