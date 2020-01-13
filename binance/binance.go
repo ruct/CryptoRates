@@ -2,7 +2,6 @@ package binance
 
 import (
 	"../header"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -42,15 +41,12 @@ func (binance *Binance) renew(currPair header.CurrPair) error {
 	log.Println("binance: updating ", time.Now())
 	fmt.Println("binance: updating ", time.Now())
 
-	body, err := header.GetBody(binance.GetTradesUrl(currPair))
-	if err != nil {
-		return err
+	if binance.cachedRates.MuxMap == nil {
+		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
 	}
 
-	bytes := []byte(body)
-	var fullData map[string]interface{}
-	if err := json.Unmarshal(bytes, &fullData); err != nil {
-		log.Println(err)
+	fullData, err := header.GetJson(binance.GetTradesUrl(currPair))
+	if err != nil {
 		return err
 	}
 
@@ -72,9 +68,6 @@ func (binance *Binance) renew(currPair header.CurrPair) error {
 		}
 	}
 
-	if binance.cachedRates.MuxMap == nil {
-		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
-	}
 	binance.cachedRates.MuxMap[currPair] = header.Rate{
 		currPair,
 		buyPrice,

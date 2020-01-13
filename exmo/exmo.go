@@ -2,7 +2,6 @@ package exmo
 
 import (
 	"../header"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -40,15 +39,8 @@ func (exmo *Exmo) renew() error {
 	log.Println("exmo: updating ", time.Now())
 	fmt.Println("exmo: updating ", time.Now())
 
-	body, err := header.GetBody(exmo.GetTradesUrl(header.CurrPair{}))
+	fullData, err := header.GetJson(exmo.GetTradesUrl(header.CurrPair{}))
 	if err != nil {
-		return err
-	}
-
-	bytes := []byte(body)
-	var fullData map[string]interface{}
-	if err := json.Unmarshal(bytes, &fullData); err != nil {
-		log.Println(err)
 		return err
 	}
 

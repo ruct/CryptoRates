@@ -1,6 +1,7 @@
 package header
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -64,6 +65,21 @@ func GetBody(url string) (string, error) {
 	bodyString := string(bodyBytes)
 
 	return bodyString, nil
+}
+
+func GetJson(url string) (map[string]interface{}, error) {
+	body, err := GetBody(url)
+	if err != nil {
+		return nil, err
+	}
+
+	bytes := []byte(body)
+	var fullData map[string]interface{}
+	if err := json.Unmarshal(bytes, &fullData); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return fullData, nil
 }
 
 func Init() {
