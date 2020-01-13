@@ -16,8 +16,8 @@ type Binance struct {
 func (*Binance) GetName() string {
 	return "binance"
 }
-func (binance *Binance) SetRate(rate header.CachedRate) {
-	binance.cachedRates.MuxMap[rate.Rate.CurrPair] = rate
+func (binance *Binance) SetRate(rate header.Rate) {
+	binance.cachedRates.MuxMap[rate.CurrPair] = rate
 }
 
 func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
@@ -25,7 +25,7 @@ func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header
 	defer binance.cachedRates.Mux.Unlock()
 
 	return header.DefaultGetRate(binance, currPair, recency,
-		func() (rate header.CachedRate, ok bool) {
+		func() (rate header.Rate, ok bool) {
 			rate, ok = binance.cachedRates.MuxMap[currPair]
 			return rate, ok
 		},
@@ -69,10 +69,12 @@ func (binance *Binance) renew(currPair header.CurrPair) error {
 	}
 
 	if binance.cachedRates.MuxMap == nil {
-		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.CachedRate)
+		binance.cachedRates.MuxMap = make(map[header.CurrPair]header.Rate)
 	}
-	binance.cachedRates.MuxMap[currPair] = header.CachedRate{
-		header.Rate{currPair, buyPrice, sellPrice},
+	binance.cachedRates.MuxMap[currPair] = header.Rate{
+		currPair,
+		buyPrice,
+		sellPrice,
 		time.Now().Unix(),
 	}
 	return nil

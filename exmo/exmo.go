@@ -23,7 +23,7 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 	defer exmo.cachedRates.Mux.Unlock()
 
 	return header.DefaultGetRate(exmo, currPair, recency,
-		func() (rate header.CachedRate, ok bool) {
+		func() (rate header.Rate, ok bool) {
 			rate, ok = exmo.cachedRates.MuxMap[currPair]
 			return rate, ok
 		},
@@ -48,7 +48,7 @@ func (exmo *Exmo) renew() error {
 		return err
 	}
 
-	var data = make(map[header.CurrPair]header.CachedRate)
+	var data = make(map[header.CurrPair]header.Rate)
 	for key, value := range fullData {
 		s := strings.Split(key, "_")
 		if len(s) != 2 {
@@ -82,12 +82,10 @@ func (exmo *Exmo) renew() error {
 				return err2
 			}
 
-			data[currPair] = header.CachedRate{
-				header.Rate{
-					currPair,
-					buyPrice,
-					sellPrice,
-				},
+			data[currPair] = header.Rate{
+				currPair,
+				buyPrice,
+				sellPrice,
 				time.Now().Unix(),
 			}
 		}

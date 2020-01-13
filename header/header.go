@@ -25,19 +25,15 @@ type Rate struct {
 	CurrPair  CurrPair
 	BuyPrice  float64
 	SellPrice float64
-}
-
-func (rate Rate) String() string {
-	return fmt.Sprintf("%v buy: %v; sell: %v\n", rate.CurrPair, rate.BuyPrice, rate.SellPrice)
-}
-
-type CachedRate struct {
-	Rate    Rate
 	Updated int64
 }
 
+func (rate Rate) String() string {
+	return fmt.Sprintf("%v buy: %v; sell: %v; updated: %v\n", rate.CurrPair, rate.BuyPrice, rate.SellPrice, time.Unix(rate.Updated, 0))
+}
+
 type MuxMap struct {
-	MuxMap map[CurrPair]CachedRate
+	MuxMap map[CurrPair]Rate
 	Mux    sync.Mutex
 }
 
@@ -83,7 +79,7 @@ func Init() {
 
 
 func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
-	getCachedRate func() (CachedRate, bool), renew func() error) (Rate, error) {
+	getCachedRate func() (Rate, bool), renew func() error) (Rate, error) {
 
 	cachedRate, ok := getCachedRate()
 	if !ok {
@@ -112,5 +108,5 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 		became := cachedRate.Updated
 		log.Println(fmt.Sprintf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became))
 	}
-	return cachedRate.Rate, nil
+	return cachedRate, nil
 }
