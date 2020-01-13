@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 )
 
 type CurrPair struct {
@@ -78,4 +79,38 @@ func Init() {
 
 	log.SetOutput(f)
 	log.Println("log inited")
+}
+
+
+func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
+	getCachedRate func() (CachedRate, bool), renew func() error) (Rate, error) {
+
+	cachedRate, ok := getCachedRate()
+	if !ok {
+		log.Println(fmt.Sprintf("%v: no such %v", market.GetName(), currPair))
+	}
+	if ok && time.Now().Unix()-cachedRate.Updated > recency {
+		log.Println(fmt.Sprintf("%v: need to update %v, last update was: %v", market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated))
+	}
+
+	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
+		was := cachedRate.Updated
+
+		err := renew()
+		if err != nil {
+			log.Println(err)
+			return Rate{}, err
+		}
+
+		cachedRate, ok = getCachedRate()
+		if !ok {
+			err := errors.New(fmt.Sprintf("%v: incorrect pair %v", market.GetName(), currPair))
+			log.Println(err)
+			return Rate{}, err
+		}
+
+		became := cachedRate.Updated
+		log.Println(fmt.Sprintf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became))
+	}
+	return cachedRate.Rate, nil
 }
