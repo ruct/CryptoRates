@@ -3,7 +3,6 @@ package exmo
 import (
 	"../header"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -23,34 +22,14 @@ func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate,
 	exmo.cachedRates.Mux.Lock()
 	defer exmo.cachedRates.Mux.Unlock()
 
-	cachedRate, ok := exmo.cachedRates.MuxMap[currPair]
-	if !ok {
-		log.Println(fmt.Sprintf("exmo: no such %v", currPair))
-	}
-	if ok && time.Now().Unix()-cachedRate.Updated > recency {
-		log.Println(fmt.Sprintf("exmo: need to update %v, last update was: %v", currPair, time.Now().Unix()-cachedRate.Updated))
-	}
-
-	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
-		was := cachedRate.Updated
-
-		err := exmo.renew()
-		if err != nil {
-			log.Println(err)
-			return header.Rate{}, err
-		}
-
-		cachedRate, ok = exmo.cachedRates.MuxMap[currPair]
-		if !ok {
-			err := errors.New(fmt.Sprintf("exmo: incorrect pair %v", currPair))
-			log.Println(err)
-			return header.Rate{}, err
-		}
-
-		became := cachedRate.Updated
-		log.Println(fmt.Sprintf("exmo: wanted %v, was: %v, became: %v", currPair, was, became))
-	}
-	return cachedRate.Rate, nil
+	return header.DefaultGetRate(exmo, currPair, recency,
+		func() (rate header.CachedRate, ok bool) {
+			rate, ok = exmo.cachedRates.MuxMap[currPair]
+			return rate, ok
+		},
+		func() error {
+			return exmo.renew()
+		})
 }
 
 func (exmo *Exmo) renew() error {

@@ -3,7 +3,6 @@ package binance
 import (
 	"../header"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -17,39 +16,22 @@ type Binance struct {
 func (*Binance) GetName() string {
 	return "binance"
 }
+func (binance *Binance) SetRate(rate header.CachedRate) {
+	binance.cachedRates.MuxMap[rate.Rate.CurrPair] = rate
+}
 
 func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
 	binance.cachedRates.Mux.Lock()
 	defer binance.cachedRates.Mux.Unlock()
 
-	cachedRate, ok := binance.cachedRates.MuxMap[currPair]
-	if !ok {
-		log.Println(fmt.Sprintf("binance: no such %v", currPair))
-	}
-	if ok && time.Now().Unix()-cachedRate.Updated > recency {
-		log.Println(fmt.Sprintf("binance: need to update %v, last update was: %v", currPair, time.Now().Unix()-cachedRate.Updated))
-	}
-
-	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
-		was := cachedRate.Updated
-
-		err := binance.renew(currPair)
-		if err != nil {
-			log.Println(err)
-			return header.Rate{}, err
-		}
-
-		cachedRate, ok = binance.cachedRates.MuxMap[currPair]
-		if !ok {
-			err := errors.New(fmt.Sprintf("binance: incorrect pair %v", currPair))
-			log.Println(err)
-			return header.Rate{}, err
-		}
-
-		became := cachedRate.Updated
-		log.Println(fmt.Sprintf("binance: wanted %v, was: %v, became: %v", currPair, was, became))
-	}
-	return cachedRate.Rate, nil
+	return header.DefaultGetRate(binance, currPair, recency,
+		func() (rate header.CachedRate, ok bool) {
+			rate, ok = binance.cachedRates.MuxMap[currPair]
+			return rate, ok
+		},
+		func() error {
+			return binance.renew(currPair)
+		})
 }
 
 func (binance *Binance) renew(currPair header.CurrPair) error {
