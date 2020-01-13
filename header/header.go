@@ -42,7 +42,7 @@ type MuxMap struct {
 
 type CryptoMarket interface {
 	GetName() string
-	GetRate(CurrPair, int64) Rate
+	GetRate(CurrPair, int64) (Rate, error)
 }
 
 func GetBody(url string) (string, error) {
