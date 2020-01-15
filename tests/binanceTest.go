@@ -7,8 +7,6 @@ import (
 
 
 func BinanceTest() {
-	header.Init()
-
 	var currPairs = []header.CurrPair{
 		{"PERL", "USDC"},
 		{"BTC", "USDT"},

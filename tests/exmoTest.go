@@ -7,8 +7,6 @@ import (
 
 
 func ExmoTest() {
-	header.Init()
-
 	var currPairs = []header.CurrPair{
 		{"BTC", "USD"},
 		{"BTC", "USDT"},
