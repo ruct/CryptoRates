@@ -10,8 +10,7 @@ import (
 )
 
 type Binance struct {
-	cachedRates map[header.CurrPair]header.Rate
-	mux sync.Mutex
+	cachedRates sync.Map
 	updating sync.Mutex
 }
 
@@ -20,13 +19,13 @@ func (*Binance) GetName() string {
 }
 
 func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	binance.mux.Lock()
-	defer binance.mux.Unlock()
-
 	return header.DefaultGetRate(binance, currPair, recency,
-		func() (rate header.Rate, ok bool) {
-			rate, ok = binance.cachedRates[currPair]
-			return rate, ok
+		func() (header.Rate, bool) {
+			rate, ok := binance.cachedRates.Load(currPair)
+			if !ok {
+				return header.Rate{}, ok
+			}
+			return rate.(header.Rate), ok
 		},
 		func() error {
 			return binance.renew(currPair)
@@ -38,10 +37,6 @@ func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {
 }
 
 func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[string]interface{}) error {
-	if binance.cachedRates == nil {
-		binance.cachedRates = make(map[header.CurrPair]header.Rate)
-	}
-
 	var err error
 	var buyPrice, sellPrice float64 = -1, -1
 	for key, value := range jsonData {
@@ -61,12 +56,12 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 		}
 	}
 
-	binance.cachedRates[currPair] = header.Rate{
+	binance.cachedRates.Store(currPair, header.Rate{
 		currPair,
 		buyPrice,
 		sellPrice,
 		time.Now().Unix(),
-	}
+	})
 	return nil
 }
 

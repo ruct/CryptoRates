@@ -24,11 +24,16 @@ func main() {
 	header.Init()
 	defer header.CloseDB()
 
+	//go tests.BinanceTest()
+	//go tests.ExmoTest()
+	//select {}
+
 	markets = []header.CryptoMarket{&exmo.Exmo{}, &binance.Binance{}}
 
 	dur, psec := tests.QueriesCount(func () {
 		var recency int64 = 60
 		header.DefaultGetRates(pairs, markets, recency)
-	}, 40, 10)
+	}, 40, 20)
 	fmt.Println(dur, psec)
+
 }

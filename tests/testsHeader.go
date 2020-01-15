@@ -18,7 +18,7 @@ func getCertainRate(market header.CryptoMarket, currPair header.CurrPair, recenc
 		log.Println(err)
 		return err
 	}
-	fmt.Println(rate)
+	fmt.Print(rate)
 	return nil
 }
 
