@@ -32,7 +32,7 @@ func logInit() {
 	log.Println("log inited")
 }
 
-const MAXPROCS = 1000
+const MAXPROCS = 20
 func Init() {
 	runtime.GOMAXPROCS(MAXPROCS)
 	logInit()

@@ -1,9 +1,11 @@
 package header
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -55,4 +57,41 @@ func DefaultRenew(market CryptoMarket, currPair CurrPair,
 		return err
 	}
 	return processJson(fullData)
+}
+
+func DefaultGetRates(pairs []CurrPair, markets []CryptoMarket, recency int64) (string, error) {
+	ratesChan := make(chan FormattedRate, MAXPROCS)
+	var wg sync.WaitGroup
+
+	for i := range pairs {
+		for j := range markets {
+			wg.Add(1)
+			go func(i int, j int, wg *sync.WaitGroup) {
+				defer wg.Done()
+
+				rate, err := markets[j].GetRate(pairs[i], recency)
+				if err != nil {
+					return
+				}
+
+				var fRate FormattedRate
+				fRate.FromRate(markets[j], rate)
+				ratesChan <- fRate
+			}(i, j, &wg)
+		}
+	}
+	wg.Wait()
+	close(ratesChan)
+
+	var rates []FormattedRate
+	for rate := range ratesChan {
+		rates = append(rates, rate)
+	}
+
+	bytes, err := json.Marshal(rates)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	return string(bytes), err
 }
