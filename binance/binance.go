@@ -12,6 +12,7 @@ import (
 type Binance struct {
 	cachedRates map[header.CurrPair]header.Rate
 	mux sync.Mutex
+	updating sync.Mutex
 }
 
 func (*Binance) GetName() string {
@@ -29,7 +30,7 @@ func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header
 		},
 		func() error {
 			return binance.renew(currPair)
-		})
+		}, &binance.updating)
 }
 
 func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {

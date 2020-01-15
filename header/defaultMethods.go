@@ -10,35 +10,39 @@ import (
 )
 
 func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
-    getCachedRate func() (Rate, bool), renew func() error) (Rate, error) {
+    getCachedRate func() (Rate, bool), renew func() error, mux *sync.Mutex) (Rate, error) {
 
 	cachedRate, ok := getCachedRate()
-	if !ok {
-		log.Printf("%v: no such %v", market.GetName(), currPair)
-	}
-	if ok && time.Now().Unix()-cachedRate.Updated > recency {
-		log.Printf("%v: need to update %v, last update was: %v",
-			market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated)
-	}
-
 	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
 		was := cachedRate.Updated
 
-		err := renew()
-		if err != nil {
-			log.Println(err)
-			return Rate{}, err
-		}
-
+		mux.Lock()
 		cachedRate, ok = getCachedRate()
 		if !ok {
-			err := errors.New(fmt.Sprintf("%v: incorrect pair %v", market.GetName(), currPair))
-			log.Println(err)
-			return Rate{}, err
+			log.Printf("%v: no such %v", market.GetName(), currPair)
 		}
+		if ok && time.Now().Unix()-cachedRate.Updated > recency {
+			log.Printf("%v: need to update %v, last update was: %v",
+				market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated)
+		}
+		if !ok || time.Now().Unix()-cachedRate.Updated > recency {
+			err := renew()
+			if err != nil {
+				log.Println(err)
+				return Rate{}, err
+			}
+			cachedRate, ok = getCachedRate()
+			if !ok {
+				err := errors.New(fmt.Sprintf("%v: incorrect pair %v", market.GetName(), currPair))
+				log.Println(err)
+				mux.Unlock()
+				return Rate{}, err
+			}
 
-		became := cachedRate.Updated
-		log.Printf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became)
+			became := cachedRate.Updated
+			log.Printf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became)
+		}
+		mux.Unlock()
 	}
 
 	err := SaveRate(market, cachedRate)
@@ -56,6 +60,7 @@ func DefaultRenew(market CryptoMarket, currPair CurrPair,
 	if err != nil {
 		return err
 	}
+
 	return processJson(fullData)
 }
 

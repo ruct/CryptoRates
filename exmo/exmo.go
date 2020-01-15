@@ -10,8 +10,8 @@ import (
 )
 
 type Exmo struct {
-	cachedRates map[header.CurrPair]header.Rate
-	mux sync.Mutex
+	cachedRates sync.Map
+	updating sync.Mutex
 }
 
 func (*Exmo) GetName() string {
@@ -19,17 +19,14 @@ func (*Exmo) GetName() string {
 }
 
 func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	exmo.mux.Lock()
-	defer exmo.mux.Unlock()
-
 	return header.DefaultGetRate(exmo, currPair, recency,
-		func() (rate header.Rate, ok bool) {
-			rate, ok = exmo.cachedRates[currPair]
-			return rate, ok
-		},
-		func() error {
-			return exmo.renew()
-		})
+		func() (header.Rate, bool) {
+			rate, ok := exmo.cachedRates.Load(currPair)
+			if !ok {
+				return header.Rate{}, ok
+			}
+			return rate.(header.Rate), ok
+		}, exmo.renew, &exmo.updating)
 }
 
 func (exmo *Exmo) GetTradesUrl(header.CurrPair) string {
@@ -37,11 +34,6 @@ func (exmo *Exmo) GetTradesUrl(header.CurrPair) string {
 }
 
 func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
-	if exmo.cachedRates == nil {
-		exmo.cachedRates = make(map[header.CurrPair]header.Rate)
-	}
-
-	var data = make(map[header.CurrPair]header.Rate)
 	for key, value := range jsonData {
 		s := strings.Split(key, "_")
 		if len(s) != 2 {
@@ -75,16 +67,14 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 				return err2
 			}
 
-			data[currPair] = header.Rate{
+			exmo.cachedRates.Store(currPair, header.Rate{
 				currPair,
 				buyPrice,
 				sellPrice,
 				time.Now().Unix(),
-			}
+			})
 		}
 	}
-
-	exmo.cachedRates = data
 	return nil
 }
 
