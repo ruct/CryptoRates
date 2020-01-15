@@ -51,19 +51,19 @@ func (fRate *FormattedRate) ToRate() (Rate, error) {
 	rate.CurrPair = CurrPair{s[0], s[1]}
 	rate.BuyPrice, err = strconv.ParseFloat(fRate.BuyPrice, 64)
 	if err != nil {
-		log.Println(fmt.Sprintf("couldn't parse buyPrice %v", fRate.BuyPrice))
+		log.Printf("couldn't parse buyPrice %v", fRate.BuyPrice)
 		return Rate{}, err
 	}
 
 	rate.SellPrice, err = strconv.ParseFloat(fRate.SellPrice, 64)
 	if err != nil {
-		log.Println(fmt.Sprintf("couldn't parse sellPrice %v", fRate.SellPrice))
+		log.Printf("couldn't parse sellPrice %v", fRate.SellPrice)
 		return Rate{}, err
 	}
 
 	updatedTime, err := time.Parse(time.RFC3339, fRate.Updated)
 	if err != nil {
-		log.Println(fmt.Sprintf("couldn't parse updated %v", fRate.Updated))
+		log.Printf("couldn't parse updated %v", fRate.Updated)
 		return Rate{}, err
 	}
 	rate.Updated = updatedTime.Unix()

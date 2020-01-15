@@ -48,14 +48,14 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 			value := value.(string)
 			buyPrice, err = strconv.ParseFloat(value, 64)
 			if err != nil {
-				log.Println(fmt.Sprintf("%v: couldn't parse buyPrice %v", binance.GetName(), value))
+				log.Printf("%v: couldn't parse buyPrice %v", binance.GetName(), value)
 			}
 		} else
 		if key == "askPrice" {
 			value := value.(string)
 			sellPrice, err = strconv.ParseFloat(value, 64)
 			if err != nil {
-				log.Println(fmt.Sprintf("%v: couldn't parse sellPrice %v", binance.GetName(), value))
+				log.Printf("%v: couldn't parse sellPrice %v", binance.GetName(), value)
 			}
 		}
 	}

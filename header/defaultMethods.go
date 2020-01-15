@@ -12,10 +12,11 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 
 	cachedRate, ok := getCachedRate()
 	if !ok {
-		log.Println(fmt.Sprintf("%v: no such %v", market.GetName(), currPair))
+		log.Printf("%v: no such %v", market.GetName(), currPair)
 	}
 	if ok && time.Now().Unix()-cachedRate.Updated > recency {
-		log.Println(fmt.Sprintf("%v: need to update %v, last update was: %v", market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated))
+		log.Printf("%v: need to update %v, last update was: %v",
+			market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated)
 	}
 
 	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
@@ -35,7 +36,7 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 		}
 
 		became := cachedRate.Updated
-		log.Println(fmt.Sprintf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became))
+		log.Printf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became)
 	}
 
 	err := SaveRate(market, cachedRate)
@@ -48,7 +49,7 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 func DefaultRenew(market CryptoMarket, currPair CurrPair,
     processJson func(map[string]interface{}) error) error {
 
-	log.Println(fmt.Sprintf("%v: updating %v", market.GetName(), time.Now()))
+	log.Printf("%v: updating %v", market.GetName(), time.Now())
 	fullData, err := GetJson(market.GetTradesUrl(currPair))
 	if err != nil {
 		return err

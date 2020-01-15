@@ -7,9 +7,9 @@ import (
 
 func main() {
 	header.Init()
+	defer header.CloseDB()
+
 	go tests.BinanceTest()
 	go tests.ExmoTest()
-	select {
-
-	}
+	select {}
 }

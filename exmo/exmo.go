@@ -2,7 +2,6 @@ package exmo
 
 import (
 	"../header"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -46,7 +45,7 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 	for key, value := range jsonData {
 		s := strings.Split(key, "_")
 		if len(s) != 2 {
-			log.Println(fmt.Sprintf("%v: couldn't convert currency-pair %v", exmo.GetName(), key))
+			log.Printf("%v: couldn't convert currency-pair %v", exmo.GetName(), key)
 			continue
 		}
 		currPair := header.CurrPair{s[0], s[1]}
@@ -58,9 +57,9 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 		if !(ok1 && ok2) {
 			switch {
 			case !ok1:
-				log.Println(fmt.Sprintf("%v: couldn't parse buyPrice %v", exmo.GetName(), cmap["buy_price"]))
+				log.Printf("%v: couldn't parse buyPrice %v", exmo.GetName(), cmap["buy_price"])
 			case !ok2:
-				log.Println(fmt.Sprintf("%v: couldn't parse sellPrice %v", exmo.GetName(), cmap["sell_price"]))
+				log.Printf("%v: couldn't parse sellPrice %v", exmo.GetName(), cmap["sell_price"])
 			}
 			continue
 		} else {
