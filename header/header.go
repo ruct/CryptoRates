@@ -32,8 +32,9 @@ func logInit() {
 	log.Println("log inited")
 }
 
+const MAXPROCS = 1000
 func Init() {
-	runtime.GOMAXPROCS(8)
+	runtime.GOMAXPROCS(MAXPROCS)
 	logInit()
 	dbInit()
 }
