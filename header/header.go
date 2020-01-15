@@ -25,7 +25,7 @@ type Rate struct {
 	CurrPair  CurrPair
 	BuyPrice  float64
 	SellPrice float64
-	Updated int64
+	Updated   int64
 }
 
 func (rate Rate) String() string {
@@ -76,9 +76,7 @@ func GetJson(url string) (map[string]interface{}, error) {
 	return fullData, nil
 }
 
-func Init() {
-	runtime.GOMAXPROCS(8)
-
+func logInit() {
 	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
@@ -88,9 +86,14 @@ func Init() {
 	log.Println("log inited")
 }
 
+func Init() {
+	runtime.GOMAXPROCS(8)
+	logInit()
+	dbInit()
+}
 
 func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
-	getCachedRate func() (Rate, bool), renew func() error) (Rate, error) {
+    getCachedRate func() (Rate, bool), renew func() error) (Rate, error) {
 
 	cachedRate, ok := getCachedRate()
 	if !ok {
@@ -119,14 +122,18 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 		became := cachedRate.Updated
 		log.Println(fmt.Sprintf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became))
 	}
+
+	err := SaveRate(market, cachedRate)
+	if err != nil {
+		return Rate{}, err
+	}
 	return cachedRate, nil
 }
 
 func DefaultRenew(market CryptoMarket, currPair CurrPair,
-	processJson func (map[string]interface{}) error) error {
+    processJson func(map[string]interface{}) error) error {
 
 	log.Println(fmt.Sprintf("%v: updating %v", market.GetName(), time.Now()))
-	fmt.Println(fmt.Sprintf("%v: updating %v", market.GetName(), time.Now()))
 	fullData, err := GetJson(market.GetTradesUrl(currPair))
 	if err != nil {
 		return err
