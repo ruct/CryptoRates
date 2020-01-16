@@ -40,7 +40,7 @@ func SaveRate(market CryptoMarket, rate Rate) error {
 	var fRate FormattedRate
 	fRate.FromRate(market, rate)
 
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Batch(func(tx *bolt.Tx) error {
 		b, err := tx.Bucket([]byte("rates")).CreateBucketIfNotExists([]byte(market.GetName()))
 		if err != nil {
 			return err
