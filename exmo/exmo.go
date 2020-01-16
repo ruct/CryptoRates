@@ -67,12 +67,18 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 				return err2
 			}
 
-			exmo.cachedRates.Store(currPair, header.Rate{
+			var rate = header.Rate{
 				currPair,
 				buyPrice,
 				sellPrice,
 				time.Now().Unix(),
-			})
+			}
+
+			exmo.cachedRates.Store(currPair, rate)
+			var err = header.SaveRate(exmo, rate)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

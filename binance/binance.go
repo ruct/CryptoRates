@@ -56,12 +56,18 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 		}
 	}
 
-	binance.cachedRates.Store(currPair, header.Rate{
+	var rate = header.Rate{
 		currPair,
-		buyPrice,
-		sellPrice,
-		time.Now().Unix(),
-	})
+		    buyPrice,
+		    sellPrice,
+		    time.Now().Unix(),
+	}
+
+	binance.cachedRates.Store(currPair, rate)
+	err = header.SaveRate(binance, rate)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

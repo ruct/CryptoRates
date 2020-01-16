@@ -44,11 +44,6 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 		}
 		mux.Unlock()
 	}
-
-	err := SaveRate(market, cachedRate)
-	if err != nil {
-		return Rate{}, err
-	}
 	return cachedRate, nil
 }
 
