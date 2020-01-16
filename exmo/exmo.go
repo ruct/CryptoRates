@@ -2,6 +2,7 @@ package exmo
 
 import (
 	"../header"
+	"../utils"
 	"log"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 
 type Exmo struct {
 	cachedRates sync.Map
-	updating sync.Mutex
+	updating    sync.Mutex
 }
 
 func (*Exmo) GetName() string {
@@ -19,7 +20,7 @@ func (*Exmo) GetName() string {
 }
 
 func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	return header.DefaultGetRate(exmo, currPair, recency,
+	return utils.DefaultGetRate(exmo, currPair, recency,
 		func() (header.Rate, bool) {
 			rate, ok := exmo.cachedRates.Load(currPair)
 			if !ok {
@@ -85,7 +86,7 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 }
 
 func (exmo *Exmo) renew() error {
-	return header.DefaultRenew(exmo, header.CurrPair{},
+	return utils.DefaultRenew(exmo, header.CurrPair{},
 		func(jsonData map[string]interface{}) error {
 			return exmo.processJson(jsonData)
 		})

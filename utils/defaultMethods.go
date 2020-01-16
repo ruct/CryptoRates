@@ -1,4 +1,4 @@
-package header
+package utils
 
 import (
 	"encoding/json"
@@ -7,10 +7,11 @@ import (
 	"log"
 	"sync"
 	"time"
+	"../header"
 )
 
-func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
-    getCachedRate func() (Rate, bool), renew func() error, mux *sync.Mutex) (Rate, error) {
+func DefaultGetRate(market header.CryptoMarket, currPair header.CurrPair, recency int64,
+    getCachedRate func() (header.Rate, bool), renew func() error, mux *sync.Mutex) (header.Rate, error) {
 
 	cachedRate, ok := getCachedRate()
 	if !ok || time.Now().Unix()-cachedRate.Updated > recency {
@@ -29,14 +30,14 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 			err := renew()
 			if err != nil {
 				log.Println(err)
-				return Rate{}, err
+				return header.Rate{}, err
 			}
 			cachedRate, ok = getCachedRate()
 			if !ok {
 				err := errors.New(fmt.Sprintf("%v: incorrect pair %v", market.GetName(), currPair))
 				log.Println(err)
 				mux.Unlock()
-				return Rate{}, err
+				return header.Rate{}, err
 			}
 
 			became := cachedRate.Updated
@@ -47,7 +48,7 @@ func DefaultGetRate(market CryptoMarket, currPair CurrPair, recency int64,
 	return cachedRate, nil
 }
 
-func DefaultRenew(market CryptoMarket, currPair CurrPair,
+func DefaultRenew(market header.CryptoMarket, currPair header.CurrPair,
     processJson func(map[string]interface{}) error) error {
 
 	log.Printf("%v: updating %v", market.GetName(), time.Now())
@@ -59,8 +60,8 @@ func DefaultRenew(market CryptoMarket, currPair CurrPair,
 	return processJson(fullData)
 }
 
-func DefaultGetRates(pairs []CurrPair, markets []CryptoMarket, recency int64) (string, error) {
-	ratesChan := make(chan FormattedRate, MAXPROCS)
+func DefaultGetRates(pairs []header.CurrPair, markets []header.CryptoMarket, recency int64) (string, error) {
+	ratesChan := make(chan header.FormattedRate, header.MAXPROCS)
 	var wg sync.WaitGroup
 
 	for i := range pairs {
@@ -74,7 +75,7 @@ func DefaultGetRates(pairs []CurrPair, markets []CryptoMarket, recency int64) (s
 					return
 				}
 
-				var fRate FormattedRate
+				var fRate header.FormattedRate
 				fRate.FromRate(markets[j], rate)
 				ratesChan <- fRate
 			}(i, j, &wg)
@@ -83,7 +84,7 @@ func DefaultGetRates(pairs []CurrPair, markets []CryptoMarket, recency int64) (s
 	wg.Wait()
 	close(ratesChan)
 
-	var rates []FormattedRate
+	var rates []header.FormattedRate
 	for rate := range ratesChan {
 		rates = append(rates, rate)
 	}

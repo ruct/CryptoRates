@@ -2,6 +2,7 @@ package binance
 
 import (
 	"../header"
+	"../utils"
 	"fmt"
 	"log"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 
 type Binance struct {
 	cachedRates sync.Map
-	updating sync.Mutex
+	updating    sync.Mutex
 }
 
 func (*Binance) GetName() string {
@@ -19,7 +20,7 @@ func (*Binance) GetName() string {
 }
 
 func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	return header.DefaultGetRate(binance, currPair, recency,
+	return utils.DefaultGetRate(binance, currPair, recency,
 		func() (header.Rate, bool) {
 			rate, ok := binance.cachedRates.Load(currPair)
 			if !ok {
@@ -58,9 +59,9 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 
 	var rate = header.Rate{
 		currPair,
-		    buyPrice,
-		    sellPrice,
-		    time.Now().Unix(),
+		buyPrice,
+		sellPrice,
+		time.Now().Unix(),
 	}
 
 	binance.cachedRates.Store(currPair, rate)
@@ -72,7 +73,7 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 }
 
 func (binance *Binance) renew(currPair header.CurrPair) error {
-	return header.DefaultRenew(binance, currPair,
+	return utils.DefaultRenew(binance, currPair,
 		func(jsonData map[string]interface{}) error {
 			return binance.processJson(currPair, jsonData)
 		})

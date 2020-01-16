@@ -4,6 +4,7 @@ import (
 	"../binance"
 	"../exmo"
 	"../header"
+	"../utils"
 	"fmt"
 	"testing"
 )
@@ -23,10 +24,10 @@ func BenchmarkMain(b *testing.B) {
 
 	markets = []header.CryptoMarket{&exmo.Exmo{}, &binance.Binance{}}
 
-	dur, psec := QueriesCount(func() {
+	dur, psec := utils.QueriesCount(func() {
 		var recency int64 = 60
-		header.DefaultGetRates(pairs, markets, recency)
-	}, 400, 20)
+		utils.DefaultGetRates(pairs, markets, recency)
+	}, 400, 200)
 	fmt.Println(dur, psec)
 
 }
