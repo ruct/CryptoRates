@@ -3,10 +3,12 @@ package tests
 import (
 	"../exmo"
 	"../header"
+	"testing"
 )
 
 
-func ExmoTest() {
+func TestExmo(t *testing.T) {
+	header.Init()
 	var currPairs = []header.CurrPair{
 		{"BTC", "USD"},
 		{"BTC", "USDT"},

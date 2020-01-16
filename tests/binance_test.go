@@ -3,10 +3,12 @@ package tests
 import (
 	"../binance"
 	"../header"
+	"testing"
 )
 
 
-func BinanceTest() {
+func TestBinance(t *testing.T) {
+	header.Init()
 	var currPairs = []header.CurrPair{
 		{"PERL", "USDC"},
 		{"BTC", "USDT"},
