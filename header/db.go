@@ -36,12 +36,12 @@ func CloseDB() {
 	db.Close()
 }
 
-func SaveRate(market CryptoMarket, rate Rate) error {
+func SaveRate(exchange CryptoExchange, rate Rate) error {
 	var fRate FormattedRate
-	fRate.FromRate(market, rate)
+	fRate.FromRate(exchange, rate)
 
 	err := db.Batch(func(tx *bolt.Tx) error {
-		b, err := tx.Bucket([]byte("rates")).CreateBucketIfNotExists([]byte(market.GetName()))
+		b, err := tx.Bucket([]byte("rates")).CreateBucketIfNotExists([]byte(exchange.GetName()))
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func SaveRate(market CryptoMarket, rate Rate) error {
 			log.Println(err)
 			return err
 		}
-		return b.Put([]byte(rate.CurrPair.String()), bytes)
+		return b.Put([]byte(rate.Pair.String()), bytes)
 	})
 	if err != nil {
 		log.Println(err)
@@ -58,7 +58,7 @@ func SaveRate(market CryptoMarket, rate Rate) error {
 	return err
 }
 
-func LoadRate(market CryptoMarket, pair CurrPair) (Rate, error) {
+func LoadRate(market CryptoExchange, pair CurrPair) (Rate, error) {
 	var fRate FormattedRate
 	err := db.View(func (tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rates")).Bucket([]byte(market.GetName()))

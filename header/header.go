@@ -12,11 +12,11 @@ type CurrPair struct {
 	Second string
 }
 
-func (currPair CurrPair) String() string {
-	return fmt.Sprintf("%v_%v", currPair.First, currPair.Second)
+func (pair CurrPair) String() string {
+	return fmt.Sprintf("%v_%v", pair.First, pair.Second)
 }
 
-type CryptoMarket interface {
+type CryptoExchange interface {
 	GetName() string
 	GetRate(CurrPair, int64) (Rate, error)
 	GetTradesUrl(CurrPair) string

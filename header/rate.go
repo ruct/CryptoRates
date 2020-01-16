@@ -9,7 +9,7 @@ import (
 )
 
 type Rate struct {
-	CurrPair  CurrPair
+	Pair      CurrPair
 	BuyPrice  float64
 	SellPrice float64
 	Updated   int64
@@ -17,7 +17,7 @@ type Rate struct {
 
 func (rate Rate) String() string {
 	return fmt.Sprintf("%v buy: %v; sell: %v; updated: %v\n",
-		rate.CurrPair, rate.BuyPrice, rate.SellPrice, time.Unix(rate.Updated, 0))
+		rate.Pair, rate.BuyPrice, rate.SellPrice, time.Unix(rate.Updated, 0))
 }
 
 type FormattedRate struct {
@@ -28,9 +28,9 @@ type FormattedRate struct {
 	Updated   string
 }
 
-func (fRate *FormattedRate) FromRate(market CryptoMarket, rate Rate) {
-	fRate.Pair = string(rate.CurrPair.First) + "/" +
-	    string(rate.CurrPair.Second)
+func (fRate *FormattedRate) FromRate(market CryptoExchange, rate Rate) {
+	fRate.Pair = string(rate.Pair.First) + "/" +
+	    string(rate.Pair.Second)
 	fRate.Exchange = market.GetName()
 	fRate.BuyPrice = rate.BuyPrice
 	fRate.SellPrice = rate.SellPrice
@@ -47,7 +47,7 @@ func (fRate *FormattedRate) ToRate() (Rate, error) {
 		log.Println(err)
 		return Rate{}, err
 	}
-	rate.CurrPair = CurrPair{s[0], s[1]}
+	rate.Pair = CurrPair{s[0], s[1]}
 	rate.BuyPrice = fRate.BuyPrice
 	rate.SellPrice = fRate.SellPrice
 

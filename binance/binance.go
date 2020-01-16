@@ -19,25 +19,25 @@ func (*Binance) GetName() string {
 	return "binance"
 }
 
-func (binance *Binance) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	return utils.DefaultGetRate(binance, currPair, recency,
+func (binance *Binance) GetRate(pair header.CurrPair, recency int64) (header.Rate, error) {
+	return utils.DefaultGetRate(binance, pair, recency,
 		func() (header.Rate, bool) {
-			rate, ok := binance.cachedRates.Load(currPair)
+			rate, ok := binance.cachedRates.Load(pair)
 			if !ok {
 				return header.Rate{}, ok
 			}
 			return rate.(header.Rate), ok
 		},
 		func() error {
-			return binance.renew(currPair)
+			return binance.renew(pair)
 		}, &binance.updating)
 }
 
-func (binance *Binance) GetTradesUrl(currPair header.CurrPair) string {
-	return fmt.Sprintf("https://api.binance.com/api/v1/ticker/24hr?symbol=%v%v", currPair.First, currPair.Second)
+func (binance *Binance) GetTradesUrl(pair header.CurrPair) string {
+	return fmt.Sprintf("https://api.binance.com/api/v1/ticker/24hr?symbol=%v%v", pair.First, pair.Second)
 }
 
-func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[string]interface{}) error {
+func (binance *Binance) processJson(pair header.CurrPair, jsonData map[string]interface{}) error {
 	var err error
 	var buyPrice, sellPrice float64 = -1, -1
 	for key, value := range jsonData {
@@ -58,13 +58,13 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 	}
 
 	var rate = header.Rate{
-		currPair,
+		pair,
 		buyPrice,
 		sellPrice,
 		time.Now().Unix(),
 	}
 
-	binance.cachedRates.Store(currPair, rate)
+	binance.cachedRates.Store(pair, rate)
 	err = header.SaveRate(binance, rate)
 	if err != nil {
 		return err
@@ -72,9 +72,9 @@ func (binance *Binance) processJson(currPair header.CurrPair, jsonData map[strin
 	return nil
 }
 
-func (binance *Binance) renew(currPair header.CurrPair) error {
-	return utils.DefaultRenew(binance, currPair,
+func (binance *Binance) renew(pair header.CurrPair) error {
+	return utils.DefaultRenew(binance, pair,
 		func(jsonData map[string]interface{}) error {
-			return binance.processJson(currPair, jsonData)
+			return binance.processJson(pair, jsonData)
 		})
 }

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-var markets []header.CryptoMarket
+var exchanges []header.CryptoExchange
 var pairs = []header.CurrPair{
 	{"BTC", "USDT"},
 	{"ADA", "ETH"},
@@ -22,11 +22,11 @@ func BenchmarkMain(b *testing.B) {
 	header.Init()
 	defer header.CloseDB()
 
-	markets = []header.CryptoMarket{&exmo.Exmo{}, &binance.Binance{}}
+	exchanges = []header.CryptoExchange{&exmo.Exmo{}, &binance.Binance{}}
 
 	dur, psec := utils.QueriesCount(func() {
 		var recency int64 = 60
-		utils.DefaultGetRates(pairs, markets, recency)
+		utils.GetRates(pairs, exchanges, recency)
 	}, 400, 200)
 	fmt.Println(dur, psec)
 

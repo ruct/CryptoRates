@@ -10,7 +10,7 @@ import (
 	"../header"
 )
 
-func DefaultGetRate(market header.CryptoMarket, currPair header.CurrPair, recency int64,
+func DefaultGetRate(exchange header.CryptoExchange, pair header.CurrPair, recency int64,
     getCachedRate func() (header.Rate, bool), renew func() error, mux *sync.Mutex) (header.Rate, error) {
 
 	cachedRate, ok := getCachedRate()
@@ -20,11 +20,11 @@ func DefaultGetRate(market header.CryptoMarket, currPair header.CurrPair, recenc
 		mux.Lock()
 		cachedRate, ok = getCachedRate()
 		if !ok {
-			log.Printf("%v: no such %v", market.GetName(), currPair)
+			log.Printf("%v: no such %v", exchange.GetName(), pair)
 		}
 		if ok && time.Now().Unix()-cachedRate.Updated > recency {
 			log.Printf("%v: need to update %v, last update was: %v",
-				market.GetName(), currPair, time.Now().Unix()-cachedRate.Updated)
+				exchange.GetName(), pair, time.Now().Unix()-cachedRate.Updated)
 		}
 		if !ok || time.Now().Unix()-cachedRate.Updated > recency {
 			err := renew()
@@ -34,25 +34,25 @@ func DefaultGetRate(market header.CryptoMarket, currPair header.CurrPair, recenc
 			}
 			cachedRate, ok = getCachedRate()
 			if !ok {
-				err := errors.New(fmt.Sprintf("%v: incorrect pair %v", market.GetName(), currPair))
+				err := errors.New(fmt.Sprintf("%v: incorrect pair %v", exchange.GetName(), pair))
 				log.Println(err)
 				mux.Unlock()
 				return header.Rate{}, err
 			}
 
 			became := cachedRate.Updated
-			log.Printf("%v: wanted %v, was: %v, became: %v", market.GetName(), currPair, was, became)
+			log.Printf("%v: wanted %v, was: %v, became: %v", exchange.GetName(), pair, was, became)
 		}
 		mux.Unlock()
 	}
 	return cachedRate, nil
 }
 
-func DefaultRenew(market header.CryptoMarket, currPair header.CurrPair,
+func DefaultRenew(exchange header.CryptoExchange, pair header.CurrPair,
     processJson func(map[string]interface{}) error) error {
 
-	log.Printf("%v: updating %v", market.GetName(), time.Now())
-	fullData, err := GetJson(market.GetTradesUrl(currPair))
+	log.Printf("%v: updating %v", exchange.GetName(), time.Now())
+	fullData, err := GetJson(exchange.GetTradesUrl(pair))
 	if err != nil {
 		return err
 	}
@@ -60,23 +60,23 @@ func DefaultRenew(market header.CryptoMarket, currPair header.CurrPair,
 	return processJson(fullData)
 }
 
-func DefaultGetRates(pairs []header.CurrPair, markets []header.CryptoMarket, recency int64) (string, error) {
+func GetRates(pairs []header.CurrPair, exchanges []header.CryptoExchange, recency int64) (string, error) {
 	ratesChan := make(chan header.FormattedRate, header.MAXPROCS)
 	var wg sync.WaitGroup
 
 	for i := range pairs {
-		for j := range markets {
+		for j := range exchanges {
 			wg.Add(1)
 			go func(i int, j int, wg *sync.WaitGroup) {
 				defer wg.Done()
 
-				rate, err := markets[j].GetRate(pairs[i], recency)
+				rate, err := exchanges[j].GetRate(pairs[i], recency)
 				if err != nil {
 					return
 				}
 
 				var fRate header.FormattedRate
-				fRate.FromRate(markets[j], rate)
+				fRate.FromRate(exchanges[j], rate)
 				ratesChan <- fRate
 			}(i, j, &wg)
 		}

@@ -8,12 +8,12 @@ import (
 	"../header"
 )
 
-func getRandomRate(market header.CryptoMarket, currPairs []header.CurrPair, recency int64) error {
-	return getCertainRate(market, currPairs[rand.Intn(len(currPairs))], recency)
+func getRandomRate(exchange header.CryptoExchange, pairs []header.CurrPair, recency int64) error {
+	return getCertainRate(exchange, pairs[rand.Intn(len(pairs))], recency)
 }
 
-func getCertainRate(market header.CryptoMarket, currPair header.CurrPair, recency int64) error {
-	rate, err := market.GetRate(currPair, recency)
+func getCertainRate(exchange header.CryptoExchange, pair header.CurrPair, recency int64) error {
+	rate, err := exchange.GetRate(pair, recency)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -22,9 +22,9 @@ func getCertainRate(market header.CryptoMarket, currPair header.CurrPair, recenc
 	return nil
 }
 
-func endlessGetCertainRate(market header.CryptoMarket, currPair header.CurrPair, recency int64) error {
+func endlessGetCertainRate(exchange header.CryptoExchange, pair header.CurrPair, recency int64) error {
 	for {
-		err := getCertainRate(market, currPair, recency)
+		err := getCertainRate(exchange, pair, recency)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -32,9 +32,9 @@ func endlessGetCertainRate(market header.CryptoMarket, currPair header.CurrPair,
 		time.Sleep(time.Second*time.Duration(10+rand.Intn(5)))
 	}
 }
-func endlessGetRandomRate(market header.CryptoMarket, currPairs []header.CurrPair, recency int64) error {
+func endlessGetRandomRate(exchange header.CryptoExchange, pairs []header.CurrPair, recency int64) error {
 	for {
-		err := getRandomRate(market, currPairs, recency)
+		err := getRandomRate(exchange, pairs, recency)
 		if err != nil {
 			fmt.Println(err)
 			return err

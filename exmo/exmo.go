@@ -19,10 +19,10 @@ func (*Exmo) GetName() string {
 	return "exmo"
 }
 
-func (exmo *Exmo) GetRate(currPair header.CurrPair, recency int64) (header.Rate, error) {
-	return utils.DefaultGetRate(exmo, currPair, recency,
+func (exmo *Exmo) GetRate(pair header.CurrPair, recency int64) (header.Rate, error) {
+	return utils.DefaultGetRate(exmo, pair, recency,
 		func() (header.Rate, bool) {
-			rate, ok := exmo.cachedRates.Load(currPair)
+			rate, ok := exmo.cachedRates.Load(pair)
 			if !ok {
 				return header.Rate{}, ok
 			}
@@ -41,7 +41,7 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 			log.Printf("%v: couldn't convert currency-pair %v", exmo.GetName(), key)
 			continue
 		}
-		currPair := header.CurrPair{s[0], s[1]}
+		pair := header.CurrPair{s[0], s[1]}
 
 		var cmap = value.(map[string]interface{})
 
@@ -69,13 +69,13 @@ func (exmo *Exmo) processJson(jsonData map[string]interface{}) error {
 			}
 
 			var rate = header.Rate{
-				currPair,
+				pair,
 				buyPrice,
 				sellPrice,
 				time.Now().Unix(),
 			}
 
-			exmo.cachedRates.Store(currPair, rate)
+			exmo.cachedRates.Store(pair, rate)
 			var err = header.SaveRate(exmo, rate)
 			if err != nil {
 				return err
