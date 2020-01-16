@@ -25,4 +25,5 @@ func TestBinance(t *testing.T) {
 	for i := 0; i < len(currPairs)*4; i++ {
 		go endlessGetRandomRate(&binance, currPairs,40)
 	}
+	select {}
 }
