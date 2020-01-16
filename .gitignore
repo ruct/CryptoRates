@@ -1,3 +1,5 @@
 .idea/
 logfile
 boltDB
+cpu.out
+*.test
