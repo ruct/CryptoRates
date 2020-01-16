@@ -27,7 +27,7 @@ func BenchmarkMain(b *testing.B) {
 	dur, psec := utils.QueriesCount(func() {
 		var recency int64 = 60
 		utils.GetRates(pairs, exchanges, recency)
-	}, 400, 200)
+	}, 800, 1000)
 	fmt.Println(dur, psec)
 
 }
