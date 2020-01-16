@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -24,8 +23,8 @@ func (rate Rate) String() string {
 type FormattedRate struct {
 	Pair      string
 	Exchange  string
-	BuyPrice  string
-	SellPrice string
+	BuyPrice  float64
+	SellPrice float64
 	Updated   string
 }
 
@@ -33,8 +32,8 @@ func (fRate *FormattedRate) FromRate(market CryptoMarket, rate Rate) {
 	fRate.Pair = string(rate.CurrPair.First) + "/" +
 	    string(rate.CurrPair.Second)
 	fRate.Exchange = market.GetName()
-	fRate.BuyPrice = strconv.FormatFloat(rate.BuyPrice, 'f', 10, 64)
-	fRate.SellPrice = strconv.FormatFloat(rate.SellPrice, 'f', 10, 64)
+	fRate.BuyPrice = rate.BuyPrice
+	fRate.SellPrice = rate.SellPrice
 	fRate.Updated = time.Unix(rate.Updated, 0).Format(time.RFC3339)
 }
 
@@ -49,17 +48,8 @@ func (fRate *FormattedRate) ToRate() (Rate, error) {
 		return Rate{}, err
 	}
 	rate.CurrPair = CurrPair{s[0], s[1]}
-	rate.BuyPrice, err = strconv.ParseFloat(fRate.BuyPrice, 64)
-	if err != nil {
-		log.Printf("couldn't parse buyPrice %v", fRate.BuyPrice)
-		return Rate{}, err
-	}
-
-	rate.SellPrice, err = strconv.ParseFloat(fRate.SellPrice, 64)
-	if err != nil {
-		log.Printf("couldn't parse sellPrice %v", fRate.SellPrice)
-		return Rate{}, err
-	}
+	rate.BuyPrice = fRate.BuyPrice
+	rate.SellPrice = fRate.SellPrice
 
 	updatedTime, err := time.Parse(time.RFC3339, fRate.Updated)
 	if err != nil {
